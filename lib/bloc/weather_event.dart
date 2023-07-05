@@ -3,4 +3,7 @@ part of 'weather_bloc.dart';
 @immutable
 abstract class WeatherEvent {}
 
-class GetWeather extends WeatherEvent {}
+class GetWeather extends WeatherEvent {
+  String cityName;
+  GetWeather(this.cityName);
+}

@@ -1,13 +1,12 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sam_test/cubit/waather_cubit.dart';
+import 'package:sam_test/bloc/weather_bloc.dart';
 import 'package:sam_test/weather.dart';
+import 'package:sam_test/weather_repository.dart';
 
-import 'reposetory.dart';
-
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -15,42 +14,53 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Material App',
+      theme: ThemeData(primarySwatch: Colors.deepPurple),
       home: BlocProvider(
-        create: (context) => WeatherCubit(FakeWeatherRepository()),
-        child: const WeatherSearchPage(),
+        create: (context) => WeatherBloc(FakeWeatherRepository()),
+        child: const Home(),
       ),
     );
   }
 }
 
-class WeatherSearchPage extends StatefulWidget {
-  const WeatherSearchPage({super.key});
+class Home extends StatefulWidget {
+  const Home({super.key});
 
   @override
-  State<WeatherSearchPage> createState() => _WeatherSearchPageState();
+  State<Home> createState() => _HomeState();
 }
 
-class _WeatherSearchPageState extends State<WeatherSearchPage> {
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+  late AnimationController animationController;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    animationController = AnimationController(vsync: this);
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    animationController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Weather Search"),
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        alignment: Alignment.center,
-        child: BlocConsumer<WeatherCubit, WaatherState>(
+        appBar: AppBar(
+          title: const Text('Title'),
+        ),
+        body: BlocConsumer<WeatherBloc, WeatherState>(
           listener: (context, state) {
             if (state is WeatherError) {
-              //Scaffold.of(context).showBodyScrim(true, 1);
-              log('message');
               showDialog(
                 context: context,
                 builder: (context) {
-                  return const AlertDialog(
-                    title: Text('text'),
+                  return AlertDialog(
+                    content: Text(state.message),
                   );
                 },
               );
@@ -58,56 +68,55 @@ class _WeatherSearchPageState extends State<WeatherSearchPage> {
           },
           builder: (context, state) {
             if (state is WeatherInitial) {
-              return buildInitialInput(context);
+              return buildInput(context);
             } else if (state is WeatherLoading) {
               return buildLoading();
             } else if (state is WeatherLoaded) {
-              return buildColumnWithData(context, state.weather);
+              return buildShow(context, state.weather);
             } else {
-              // (state is WeatherError)
-              return buildInitialInput(context);
+              return buildInput(context);
             }
           },
-        ),
+        ));
+  }
+
+  buildInput(
+    BuildContext context,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: TextField(
+        onSubmitted: (value) => onSubmit(context, value),
+        decoration: const InputDecoration(
+            suffixIcon: Icon(Icons.search),
+            hintText: 'enter city name',
+            border: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.deepPurple))),
       ),
     );
   }
 
-  buildInitialInput(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 70,
-          width: 500,
-          // margin: const EdgeInsets.only(left: 100, right: 100),
-          child: TextFormField(
-            onFieldSubmitted: (value) => onSubmit(context, value),
-            //textInputAction: TextInputAction.search,
-            decoration: const InputDecoration(
-                border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blueAccent)),
-                hintText: 'input something',
-                suffixIcon: Icon(Icons.search)),
-          ),
-        ),
-      ],
-    );
-  }
-
   onSubmit(BuildContext context, String cityName) {
-    BlocProvider.of<WeatherCubit>(context).getWeather(cityName);
+    final bloc = context.read<WeatherBloc>();
+    bloc.add(GetWeather(cityName));
+    // final cub = context.read<WeatherCubit>();
+    // cub.getWeather(cityName);
   }
 
   buildLoading() {
-    return const CircularProgressIndicator();
+    return const Center(child: CircularProgressIndicator());
   }
 
-  buildColumnWithData(BuildContext context, Weather weather) {
+  buildShow(BuildContext context, Weather weather) {
     return Column(
-      children: <Widget>[
-        Text(weather.cityName),
-        Text(weather.tempeture.toString()),
-        buildInitialInput(context)
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(' temperture of ${weather.cityName}'),
+        const SizedBox(height: 20),
+        Text('${weather.temperture}',
+            style: Theme.of(context).textTheme.headlineLarge),
+        const SizedBox(height: 20),
+        buildInput(context),
       ],
     );
   }
